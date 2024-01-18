@@ -1,0 +1,34 @@
+{
+    "plant": {
+        "value": "bathtub",
+        "options": "bathtub, cournot, other"
+    },
+    "bathtub": {
+        "cross_sectional_area_bathtub": 1,
+        "cross_sectional_area_drain": 0.1,
+        "height_bathtub_water": 0.1
+    },
+    "cournot": {
+        "max_price": 10,
+        "marginal_cost": 1
+    },
+    "other": {
+        "other": "other"
+    },
+    "controller": {
+        "value": "classic",
+        "options": "classic, neural_net"
+    },
+    "neural_net": {
+        "num_layers": 2,
+        "num_neurons": [5, 3],
+        "activation": "relu",
+        "range_initial_value": 0.1,
+        "num_epochs": 100
+    },
+    "CONSYS": {
+        "num_timesteps": 100,
+        "learning_rate": 0.01,
+        "range_disturbance_value": 0.1
+    }
+}
