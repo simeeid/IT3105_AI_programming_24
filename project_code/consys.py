@@ -2,8 +2,8 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 
-from classic_pid_controller2 import ClassicPidController
-from neural_net_controller3 import NeuralNetController
+from classic_pid_controller import ClassicPidController
+from neural_net_controller import NeuralNetController
 from bathtub_model_plant import BathtubModelPlant
 
 from config_reader import ConfigReader
