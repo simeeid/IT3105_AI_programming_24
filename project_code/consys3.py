@@ -15,6 +15,7 @@ config_reader = ConfigReader("project_code/config.json")
 def initialize_system():
     global num_epochs; global num_timesteps; global learning_rate; global range_disturbance
     global cross_sectional_area_bathtub; global cross_sectional_area_drain; global height_bathtub_water; global range_k_values
+    global num_layers; global num_neurons; global activation_function; global range_initial_value
     global plant
 
     num_epochs = config_reader.get_consys_config()['num_epochs']
@@ -27,30 +28,40 @@ def initialize_system():
     height_bathtub_water = config_reader.get_chosen_plant_config('bathtub_model')['height_bathtub_water']
     range_k_values = config_reader.get_chosen_plant_config('bathtub_model')['range_k_values']
 
+    if config_reader.get_controller_config()['value'] == "neural_net":
+        num_layers = config_reader.get_neural_net_config()['num_layers']
+        num_layers += 2
+        num_neurons = config_reader.get_neural_net_config()['num_neurons']
+        num_neurons = [3] + num_neurons + [1]
+        activation_function = config_reader.get_neural_net_config()['activation']
+        range_initial_value = config_reader.get_neural_net_config()['range_initial_value']
+    
+    # if length of num_neurons is unequal to num_layers, raise error
+    if len(num_neurons) != num_layers:
+        raise ValueError(f"Length of num_neurons ({len(num_neurons) - 2}) is unequal to num_layers ({num_layers - 2})")
+
     plant = BathtubModelPlant(cross_sectional_area_bathtub, cross_sectional_area_drain, height_bathtub_water)
 
 # ==================== run system ====================
-def initialize_weights_and_biases(layers=[3, 5,10,5, 1]):
+def initialize_weights_and_biases():
+    layers = num_neurons
     sender = layers[0]; params = []
     for reciever in layers[1:]:
-        weights = np.random.uniform(-0.1,0.1,(sender,reciever))
-        biases = np.random.uniform(-0.1,0.1,(1,reciever))
+        weights = np.random.uniform(-range_initial_value,range_initial_value,(sender,reciever))
+        biases = np.random.uniform(-range_initial_value,range_initial_value,(1,reciever))
         sender = reciever
         params.append((weights,biases))
     return params
-    
 
 def compute_mse(error):
     return jnp.mean(jnp.square(error))
 
 def run_epoch(params):
-    num_layers, num_neurons, activation = 3 + 2, [3, 5, 10, 5, 1], "relu" # will be changed
-
-    controller = NeuralNetController(params, num_layers, num_neurons, activation)
+    controller = NeuralNetController(params, num_layers, num_neurons, activation_function)
 
     local_height_bathtub_water = height_bathtub_water
 
-    control_signal = controller.compute_control_signal(params, jnp.array([0.0, 0.0, 0.0]))
+    control_signal = controller.compute_control_signal(params, jnp.array([0.0, 0.0, 0.0]), activation_function)
     external_disturbance = jax.random.uniform(jax.random.PRNGKey(42), shape=(num_timesteps,), minval=0.0, maxval=range_disturbance)
 
     for i in range(num_timesteps):
@@ -59,35 +70,29 @@ def run_epoch(params):
         error = height_bathtub_water - plant_value
         controller.update_error_history(error)
         delerror_delt = controller.error_history[-1] - controller.error_history[-2]
-        # print("error: ", error[0][0], "delerror_delt: ", delerror_delt, "sumerror: ", jnp.sum(controller.error_history))
-        control_signal = controller.compute_control_signal(params, jnp.array([error[0][0], delerror_delt, jnp.sum(controller.error_history)]))
+        control_signal = controller.compute_control_signal(params, jnp.array([error[0][0], delerror_delt, jnp.sum(controller.error_history)]), activation_function)
 
     mse = compute_mse(controller.error_history)
-    #controller.reset_error_history()
     return mse
         
+def update_controller(params, gradient):
+    num = 0
+    for weights, biases in params:
+        for i in range(len(weights)):
+            weights[i] -= learning_rate * gradient[num][0][i]
+        for i in range(len(biases)):
+            biases[i] -= learning_rate * gradient[num][1][i]
+        num += 1
+    return params
+
 def run_m_epoch(m):    
-    num_layers = 1
-    num_neurons = [3]
-    activation = "relu"
-    range_initial_value = 0.5
-    #weights, biases = initialize_weights_and_biases(num_layers, num_neurons, range_initial_value)
     params = initialize_weights_and_biases()
 
     delsumerror_delomega1 = jax.value_and_grad(run_epoch, argnums=0)
     delsumerror_delomega = jax.jit(delsumerror_delomega1)
     for _ in range(m):
         mse, gradient = delsumerror_delomega(params)
-        
-        num = 0
-        for weights, biases in params:
-            for i in range(len(weights)):
-                weights[i] -= learning_rate * gradient[num][0][i]
-            for i in range(len(biases)):
-                biases[i] -= learning_rate * gradient[num][1][i]
-            num += 1
-
-        # print("params: ", params, "mse: ", mse)
+        params = update_controller(params, gradient)
         print("mse: ", mse)
 
 
