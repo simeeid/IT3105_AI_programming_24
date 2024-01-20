@@ -3,32 +3,33 @@
         "value": "bathtub",
         "options": "bathtub, cournot, other"
     },
-    "bathtub": {
-        "cross_sectional_area_bathtub": 1,
+    "bathtub_model": {
+        "cross_sectional_area_bathtub": 25,
         "cross_sectional_area_drain": 0.1,
-        "height_bathtub_water": 0.1
+        "height_bathtub_water": 10,
+        "range_k_values": 1.0
     },
-    "cournot": {
+    "cournot_model": {
         "max_price": 10,
-        "marginal_cost": 1
+        "marginal_cost": 1.0
     },
     "other": {
         "other": "other"
     },
     "controller": {
-        "value": "classic",
+        "value": "neural_net",
         "options": "classic, neural_net"
     },
     "neural_net": {
-        "num_layers": 2,
-        "num_neurons": [5, 3],
-        "activation": "relu",
-        "range_initial_value": 0.1,
-        "num_epochs": 100
+        "num_layers": 3,
+        "num_neurons": [5, 10, 5],
+        "activation": "sigmoid",
+        "range_initial_value": 0.1
     },
     "CONSYS": {
-        "num_timesteps": 100,
-        "learning_rate": 0.01,
-        "range_disturbance_value": 0.1
+        "num_epochs": 10,
+        "num_timesteps": 10,
+        "learning_rate": 0.1,
+        "range_disturbance": 0.5
     }
 }

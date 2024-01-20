@@ -22,4 +22,4 @@ class ConfigReader:
         return self.config_data['neural_net']
     
     def get_consys_config(self):
-        return self.config_data['consys']
+        return self.config_data['CONSYS']
