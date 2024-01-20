@@ -1,8 +1,8 @@
 import jax.numpy as jnp
 
-#from abstract_controller import AbstractController
+from abstract_controller import AbstractController
 
-class ClassicPidController():
+class ClassicPidController(AbstractController):
     def __init__(self, kp, ki, kd):
         self.kp = kp
         self.ki = ki
@@ -20,10 +20,15 @@ class ClassicPidController():
     #     self.kp -= learning_rate * delsumerror_delkp
     #     self.kd -= learning_rate * delsumerror_delkd
     #     self.ki -= learning_rate * delsumerror_delki
-    def update_controller(self, learning_rate, delsumerror_delomega):
-        self.kp -= learning_rate * delsumerror_delomega[0]
-        self.ki -= learning_rate * delsumerror_delomega[1]
-        self.kd -= learning_rate * delsumerror_delomega[2]
+
+        # self.kp -= learning_rate * delsumerror_delomega[0]
+        # self.ki -= learning_rate * delsumerror_delomega[1]
+        # self.kd -= learning_rate * delsumerror_delomega[2]
+    
+    def update_controller(self, kp, ki, kd):
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
 
     def reset_error_history(self):
         self.error_history = jnp.array([0])

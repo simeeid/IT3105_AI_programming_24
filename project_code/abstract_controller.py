@@ -2,9 +2,9 @@ from abc import ABC, abstractmethod
 
 class AbstractController(ABC):
     @abstractmethod
-    def compute_control_signal(self, error, delerror_delt, sum_error):
+    def update_error_history(self, error):
         pass
 
     @abstractmethod
-    def update_controller(self, error, delerror_delt, sumerror):
+    def compute_control_signal(self, params):
         pass
