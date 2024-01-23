@@ -21,8 +21,5 @@ class ConfigReader:
     def get_chosen_controller_config(self, controller_name):
         return self.config_data[controller_name]
 
-    def get_neural_net_config(self):
-        return self.config_data['neural_net']
-    
     def get_consys_config(self):
         return self.config_data['CONSYS']
