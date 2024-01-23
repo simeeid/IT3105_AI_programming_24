@@ -6,15 +6,18 @@ import jax.numpy as jnp
 from classic_pid_controller import ClassicPidController
 from neural_net_controller import NeuralNetController
 from bathtub_model_plant import BathtubModelPlant
+from room_temperature_plant import RoomTemperaturePlant
 
 from config_reader import ConfigReader
 config_reader = ConfigReader("project_code/config.json")
 
 # ==================== initialize system ====================
 def initialize_system():
-    global chosen_controller; global plant
+    global chosen_controller; global chosen_plant; global plant
     global num_epochs; global num_timesteps; global learning_rate; global range_disturbance
-    global cross_sectional_area_bathtub; global cross_sectional_area_drain; global height_bathtub_water; global range_k_values
+    global target_value
+    global cross_sectional_area_bathtub; global cross_sectional_area_drain; global range_k_values
+    global temperature_outside; global heat_transfer_coefficient; global volume
     global num_layers; global num_neurons; global activation_function; global range_initial_value
 
     num_epochs = config_reader.get_consys_config()['num_epochs']
@@ -22,13 +25,24 @@ def initialize_system():
     learning_rate = config_reader.get_consys_config()['learning_rate']
     range_disturbance = config_reader.get_consys_config()['range_disturbance']
 
-    cross_sectional_area_bathtub = config_reader.get_chosen_plant_config('bathtub_model')['cross_sectional_area_bathtub']
-    cross_sectional_area_drain = config_reader.get_chosen_plant_config('bathtub_model')['cross_sectional_area_drain']
-    height_bathtub_water = config_reader.get_chosen_plant_config('bathtub_model')['height_bathtub_water']
+    chosen_plant = config_reader.get_plant_config()['value']
+    if chosen_plant == "bathtub_model":
+        target_value = config_reader.get_chosen_plant_config('bathtub_model')['height_bathtub_water']
+        cross_sectional_area_bathtub = config_reader.get_chosen_plant_config('bathtub_model')['cross_sectional_area_bathtub']
+        cross_sectional_area_drain = config_reader.get_chosen_plant_config('bathtub_model')['cross_sectional_area_drain']
 
-    plant = BathtubModelPlant(cross_sectional_area_bathtub, cross_sectional_area_drain, height_bathtub_water)
+        plant = BathtubModelPlant(cross_sectional_area_bathtub, cross_sectional_area_drain, target_value)
+    elif chosen_plant == "room_model":
+        target_value = config_reader.get_chosen_plant_config('room_model')['target_temperature']
+        temperature_outside = config_reader.get_chosen_plant_config('room_model')['temperature_outside']
+        heat_transfer_coefficient = config_reader.get_chosen_plant_config('room_model')['heat_transfer_coefficient']
+        volume = config_reader.get_chosen_plant_config('room_model')['volume']
+
+        plant = RoomTemperaturePlant(temperature_outside, heat_transfer_coefficient, volume)
+    else:
+        raise ValueError(f"Plant \"{chosen_plant}\" not found")
+
     chosen_controller = config_reader.get_controller_config()['value']
-
     if chosen_controller == "neural_net":
         num_layers = config_reader.get_chosen_controller_config('neural_net')['num_layers']
         num_layers += 2
@@ -41,6 +55,8 @@ def initialize_system():
             raise ValueError(f"Length of num_neurons ({len(num_neurons) - 2}) is unequal to num_layers ({num_layers - 2})")
     elif chosen_controller == "classic":
         range_k_values = config_reader.get_chosen_controller_config('classic')['range_k_values']
+    else:
+        raise ValueError(f"Controller \"{chosen_controller}\" not found")
 
 # ==================== run system ====================
 def initialize_weights_and_biases():
@@ -55,8 +71,6 @@ def initialize_weights_and_biases():
     elif chosen_controller == "classic":
         params = np.random.uniform(0, range_k_values, size=(3, ))
         #params = jnp.array(jax.random.uniform(jax.random.PRNGKey(42), shape=(3, ), minval=0.0, maxval=range_k_values))
-    else:
-        raise ValueError(f"Controller \"{chosen_controller}\" not found")
     return params
 
 def compute_mse(error):
@@ -68,19 +82,26 @@ def run_epoch(params):
     elif chosen_controller == "classic":
         controller = ClassicPidController(params)
 
-    local_height_bathtub_water = height_bathtub_water
+    local_value = target_value
+    #local_height_bathtub_water = height_bathtub_water
 
     if chosen_controller == "neural_net":
         control_signal = controller.compute_control_signal(params, jnp.array([0.0, 0.0, 0.0]), activation_function)
     elif chosen_controller == "classic":
         control_signal = controller.compute_control_signal(0, 0, 0)
+    
+    if chosen_plant == "bathtub_model":
+        external_disturbance = np.random.uniform(-range_disturbance, range_disturbance, num_timesteps)
+    elif chosen_plant == "room_model":
+        external_disturbance = -np.random.normal(0, 0.01, num_timesteps)
+        external_disturbance = external_disturbance - 0.02
+        external_disturbance = np.clip(external_disturbance, -0.025, 0)
 
-    external_disturbance = np.random.uniform(-range_disturbance, range_disturbance, num_timesteps)
 
     for i in range(num_timesteps):
-        plant_value = plant.update_plant(control_signal, external_disturbance[i], local_height_bathtub_water)
-        local_height_bathtub_water = plant_value
-        error = height_bathtub_water - plant_value
+        plant_value = plant.update_plant(control_signal, external_disturbance[i], local_value)
+        local_value = plant_value
+        error = target_value - plant_value
         controller.update_error_history(error)
         delerror_delt = controller.error_history[-1] - controller.error_history[-2]
 
