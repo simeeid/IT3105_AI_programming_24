@@ -1,35 +1,43 @@
 {
     "plant": {
-        "value": "bathtub",
-        "options": "bathtub, cournot, other"
+        "value": "room_model",
+        "options": "bathtub_model, cournot_model, room_model"
     },
     "bathtub_model": {
         "cross_sectional_area_bathtub": 25,
         "cross_sectional_area_drain": 0.1,
-        "height_bathtub_water": 10,
-        "range_k_values": 1.0
+        "height_bathtub_water": 10
     },
     "cournot_model": {
-        "max_price": 10,
-        "marginal_cost": 1.0
+        "max_price": 2.5,
+        "marginal_cost": 0.1,
+        "target_value": 1.0
     },
-    "other": {
-        "other": "other"
+    "room_model": {
+        "target_temperature": 22,
+        "temperature_outside": -5,
+        "heat_transfer_coefficient": 1, 
+        "volume": 50,
+        "classic": "-5, 1, 50",
+        "neural": ""
     },
     "controller": {
         "value": "neural_net",
         "options": "classic, neural_net"
     },
+    "classic": {
+        "range_k_values": 0.1
+    },
     "neural_net": {
         "num_layers": 3,
         "num_neurons": [5, 10, 5],
-        "activation": "sigmoid",
+        "activation": "relu",
         "range_initial_value": 0.1
     },
     "CONSYS": {
-        "num_epochs": 10,
+        "num_epochs": 100,
         "num_timesteps": 10,
         "learning_rate": 0.1,
-        "range_disturbance": 0.5
+        "range_disturbance": 0.01
     }
 }
