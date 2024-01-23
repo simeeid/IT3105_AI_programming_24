@@ -1,3 +1,4 @@
+from matplotlib import pyplot as plt
 import numpy as np
 import jax
 import jax.numpy as jnp
@@ -24,21 +25,22 @@ def initialize_system():
     cross_sectional_area_bathtub = config_reader.get_chosen_plant_config('bathtub_model')['cross_sectional_area_bathtub']
     cross_sectional_area_drain = config_reader.get_chosen_plant_config('bathtub_model')['cross_sectional_area_drain']
     height_bathtub_water = config_reader.get_chosen_plant_config('bathtub_model')['height_bathtub_water']
-    range_k_values = config_reader.get_chosen_plant_config('bathtub_model')['range_k_values']
 
     plant = BathtubModelPlant(cross_sectional_area_bathtub, cross_sectional_area_drain, height_bathtub_water)
     chosen_controller = config_reader.get_controller_config()['value']
 
     if chosen_controller == "neural_net":
-        num_layers = config_reader.get_neural_net_config()['num_layers']
+        num_layers = config_reader.get_chosen_controller_config('neural_net')['num_layers']
         num_layers += 2
-        num_neurons = config_reader.get_neural_net_config()['num_neurons']
+        num_neurons = config_reader.get_chosen_controller_config('neural_net')['num_neurons']
         num_neurons = [3] + num_neurons + [1]
-        activation_function = config_reader.get_neural_net_config()['activation']
-        range_initial_value = config_reader.get_neural_net_config()['range_initial_value']
+        activation_function = config_reader.get_chosen_controller_config('neural_net')['activation']
+        range_initial_value = config_reader.get_chosen_controller_config('neural_net')['range_initial_value']
     
         if len(num_neurons) != num_layers:
             raise ValueError(f"Length of num_neurons ({len(num_neurons) - 2}) is unequal to num_layers ({num_layers - 2})")
+    elif chosen_controller == "classic":
+        range_k_values = config_reader.get_chosen_controller_config('classic')['range_k_values']
 
 # ==================== run system ====================
 def initialize_weights_and_biases():
@@ -51,7 +53,8 @@ def initialize_weights_and_biases():
             sender = reciever
             params.append((weights,biases))
     elif chosen_controller == "classic":
-        params = jnp.array(jax.random.uniform(jax.random.PRNGKey(42), shape=(3, ), minval=0.0, maxval=range_k_values))
+        params = np.random.uniform(0, range_k_values, size=(3, ))
+        #params = jnp.array(jax.random.uniform(jax.random.PRNGKey(42), shape=(3, ), minval=0.0, maxval=range_k_values))
     else:
         raise ValueError(f"Controller \"{chosen_controller}\" not found")
     return params
@@ -72,7 +75,7 @@ def run_epoch(params):
     elif chosen_controller == "classic":
         control_signal = controller.compute_control_signal(0, 0, 0)
 
-    external_disturbance = jax.random.uniform(jax.random.PRNGKey(42), shape=(num_timesteps,), minval=0.0, maxval=range_disturbance)
+    external_disturbance = np.random.uniform(-range_disturbance, range_disturbance, num_timesteps)
 
     for i in range(num_timesteps):
         plant_value = plant.update_plant(control_signal, external_disturbance[i], local_height_bathtub_water)
@@ -103,6 +106,7 @@ def update_controller(params, gradient):
     return params
 
 def run_m_epoch(m):
+    mse_history = []
     params = initialize_weights_and_biases()
 
     delsumerror_delomega1 = jax.value_and_grad(run_epoch, argnums=0)
@@ -111,6 +115,10 @@ def run_m_epoch(m):
         mse, gradient = delsumerror_delomega(params)
         params = update_controller(params, gradient)
         print("mse: ", mse)
+        mse_history.append(mse)
+    # plot the mse history as a graph with index on x-axis and mse on y-axis
+    plt.plot(mse_history)
+    plt.show()
 
 
 if __name__ == "__main__":
