@@ -1,6 +1,6 @@
 {
     "plant": {
-        "value": "room_model",
+        "value": "bathtub_model",
         "options": "bathtub_model, cournot_model, room_model"
     },
     "bathtub_model": {
@@ -9,9 +9,9 @@
         "height_bathtub_water": 10
     },
     "cournot_model": {
-        "max_price": 2.5,
+        "max_price": 4,
         "marginal_cost": 0.1,
-        "target_value": 1.0
+        "target_value": 2.0
     },
     "room_model": {
         "target_temperature": 22,
@@ -31,12 +31,12 @@
     "neural_net": {
         "num_layers": 3,
         "num_neurons": [5, 10, 5],
-        "activation": "relu",
+        "activation": "soft_relu",
         "range_initial_value": 0.1
     },
     "CONSYS": {
         "num_epochs": 100,
-        "num_timesteps": 10,
+        "num_timesteps": 20,
         "learning_rate": 0.1,
         "range_disturbance": 0.01
     }
