@@ -12,6 +12,7 @@ class RoomTemperaturePlant():#AbstractPlant):
         self.density = 1.2 # kg/m^3
         self.specific_heat_capacity = 1005 # J/(kg*K)
 
-    def update_plant(self, control_signal, external_disturbance, temperature_inside):
+    def update_plant(self, control_signal, external_disturbance, temperature_inside_arr):
+        temperature_inside = temperature_inside_arr[0]
         temperature_inside = temperature_inside + (control_signal / (self.density * self.specific_heat_capacity * self.volume)) * (self.temperature_outside - temperature_inside) + control_signal / (self.density * self.specific_heat_capacity * self.volume) + external_disturbance
-        return temperature_inside
+        return [temperature_inside]

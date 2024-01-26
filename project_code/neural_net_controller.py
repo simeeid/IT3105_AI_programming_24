@@ -19,6 +19,8 @@ class NeuralNetController():
         def sigmoid(x): return 1 / (1 + jnp.exp(-x))
         def tanh(x): return jnp.tanh(x)
         def relu(x): return jnp.maximum(x, 0)
+        # soft version of relu
+        def soft_relu(x): return jnp.log(1 + jnp.exp(x))
 
         if activation_function == "sigmoid":
             activation_function = sigmoid
@@ -26,6 +28,8 @@ class NeuralNetController():
             activation_function = tanh
         elif activation_function == "relu":
             activation_function = relu
+        elif activation_function == "soft_relu":
+            activation_function = soft_relu
         else:
             raise ValueError(f"Activation function \"{activation_function}\" not found")
 
