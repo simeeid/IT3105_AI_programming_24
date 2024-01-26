@@ -68,7 +68,6 @@ def initialize_system():
     else:
         raise ValueError(f"Controller \"{chosen_controller}\" not found")
 
-# ==================== run system ====================
 def initialize_weights_and_biases():
     if chosen_controller == "neural_net":
         layers = num_neurons
@@ -82,6 +81,7 @@ def initialize_weights_and_biases():
         params = np.random.uniform(0, range_k_values, size=(3, ))
     return params
 
+# ==================== run system ====================
 def compute_mse(error):
     return jnp.mean(jnp.square(error))
 
@@ -107,8 +107,7 @@ def run_epoch(params):
 
     for i in range(num_timesteps):
         local_value_arr = plant.update_plant(control_signal, external_disturbance[i], local_value_arr)
-        #local_value = plant_value_arr[0]
-        error = target_value - local_value_arr[0] #plant_value
+        error = target_value - local_value_arr[0] 
         controller.update_error_history(error)
         delerror_delt = controller.error_history[-1] - controller.error_history[-2]
 
@@ -133,6 +132,24 @@ def update_controller(params, gradient):
         params -= learning_rate * gradient
     return params
 
+def plot_run(mse_history, params_history):
+    # plot the mse history 
+    plt.xlabel("Epoch")
+    plt.ylabel("MSE")
+    plt.title("MSE history")
+    plt.plot(mse_history)
+    plt.show()
+    if chosen_controller == "classic":
+        params_history = np.array(params_history)
+        plt.xlabel("Epoch")
+        plt.ylabel("Y")
+        plt.title("PID controller parameters history")
+        plt.plot(params_history[:, 0], label="kp")
+        plt.plot(params_history[:, 1], label="ki")
+        plt.plot(params_history[:, 2], label="kd")
+        plt.legend()
+        plt.show()
+
 def run_m_epoch(m):
     mse_history = []
     params_history = []
@@ -145,25 +162,8 @@ def run_m_epoch(m):
         if chosen_controller == "classic":
             params_history.append(params)
         params = update_controller(params, gradient)
-        #print("mse: ", mse)
         mse_history.append(mse)
-    # plot the mse history 
-    plt.xlabel("Epoch")
-    plt.ylabel("MSE")
-    plt.title("MSE history")
-    plt.plot(mse_history)
-    plt.show()
-    if chosen_controller == "classic":
-        # plot params_history, where the three graphs are named kp, ki, kd
-        params_history = np.array(params_history)
-        plt.xlabel("Epoch")
-        plt.ylabel("Y")
-        plt.title("PID controller parameters history")
-        plt.plot(params_history[:, 0], label="kp")
-        plt.plot(params_history[:, 1], label="ki")
-        plt.plot(params_history[:, 2], label="kd")
-        plt.legend()
-        plt.show()
+    plot_run(mse_history, params_history)
 
 if __name__ == "__main__":
     initialize_system()
