@@ -1,4 +1,3 @@
-from abstract_plant import AbstractPlant
 from config_reader import ConfigReader
 
 import numpy as np
