@@ -1,14 +1,19 @@
 from abstract_plant import AbstractPlant
+from config_reader import ConfigReader
 
 import numpy as np
 import jax
 import jax.numpy as jnp
 
-class BathtubModelPlant(AbstractPlant):
-    def __init__(self, cross_sectional_area_bathtub, cross_sectional_area_drain, height_bathtub_water):
-        self.cross_sectional_area_bathtub = cross_sectional_area_bathtub
-        self.cross_sectional_area_drain = cross_sectional_area_drain
-        self.height_bathtub_water = height_bathtub_water
+class BathtubModelPlant():
+    def __init__(self):
+        config_reader = ConfigReader("project_code/config.json")
+
+        self.cross_sectional_area_bathtub = config_reader.get_chosen_plant_config('bathtub_model')['cross_sectional_area_bathtub']
+        self.cross_sectional_area_drain = config_reader.get_chosen_plant_config('bathtub_model')['cross_sectional_area_drain']
+        self.height_bathtub_water = config_reader.get_chosen_plant_config('bathtub_model')['height_bathtub_water']
+
+        self.range_disturbance = config_reader.get_consys_config()['range_disturbance']
 
     def update_plant(self, control_signal, external_disturbance, initial_value_arr):
         initial_value = initial_value_arr[0]
@@ -20,5 +25,8 @@ class BathtubModelPlant(AbstractPlant):
         initial_value += delh_delt
         return [initial_value]
 
-    def reset(self, initial_value):
-        self.height_bathtub_water = initial_value
+    def get_external_disturbance(self, size):
+        return np.random.uniform(-self.range_disturbance, self.range_disturbance, size)
+    
+    def get_initial_value(self):
+        return [self.height_bathtub_water]

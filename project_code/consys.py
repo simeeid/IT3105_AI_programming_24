@@ -14,12 +14,9 @@ config_reader = ConfigReader("project_code/config.json")
 
 # ==================== initialize system ====================
 def initialize_system():
-    global chosen_controller; global chosen_plant; global plant
+    global chosen_controller; global plant
     global num_epochs; global num_timesteps; global learning_rate; global range_disturbance
-    global target_value
-    global cross_sectional_area_bathtub; global cross_sectional_area_drain; global range_k_values
-    global max_price; global marginal_cost; global q1_initial_value; global q2_initial_value
-    global temperature_outside; global heat_transfer_coefficient; global volume
+    global range_k_values
     global num_layers; global num_neurons; global activation_function; global range_initial_value
 
     num_epochs = config_reader.get_consys_config()['num_epochs']
@@ -29,26 +26,11 @@ def initialize_system():
 
     chosen_plant = config_reader.get_plant_config()['value']
     if chosen_plant == "bathtub_model":
-        target_value = config_reader.get_chosen_plant_config('bathtub_model')['height_bathtub_water']
-        cross_sectional_area_bathtub = config_reader.get_chosen_plant_config('bathtub_model')['cross_sectional_area_bathtub']
-        cross_sectional_area_drain = config_reader.get_chosen_plant_config('bathtub_model')['cross_sectional_area_drain']
-
-        plant = BathtubModelPlant(cross_sectional_area_bathtub, cross_sectional_area_drain, target_value)
+        plant = BathtubModelPlant()
     elif chosen_plant == "cournot_model":
-        target_value = config_reader.get_chosen_plant_config('cournot_model')['target_value']
-        max_price = config_reader.get_chosen_plant_config('cournot_model')['max_price']
-        marginal_cost = config_reader.get_chosen_plant_config('cournot_model')['marginal_cost']
-        q1_initial_value = config_reader.get_chosen_plant_config('cournot_model')['q1_initial_value']
-        q2_initial_value = config_reader.get_chosen_plant_config('cournot_model')['q2_initial_value']
-
-        plant = CournotCompetitionPlant(max_price, marginal_cost)
+        plant = CournotCompetitionPlant()
     elif chosen_plant == "room_model":
-        target_value = config_reader.get_chosen_plant_config('room_model')['target_temperature']
-        temperature_outside = config_reader.get_chosen_plant_config('room_model')['temperature_outside']
-        heat_transfer_coefficient = config_reader.get_chosen_plant_config('room_model')['heat_transfer_coefficient']
-        volume = config_reader.get_chosen_plant_config('room_model')['volume']
-
-        plant = RoomTemperaturePlant(temperature_outside, heat_transfer_coefficient, volume)
+        plant = RoomTemperaturePlant()
     else:
         raise ValueError(f"Plant \"{chosen_plant}\" not found")
 
@@ -92,22 +74,14 @@ def run_epoch(params):
     elif chosen_controller == "classic":
         controller = ClassicPidController(params)
         control_signal = controller.compute_control_signal(0, 0, 0)
-    
-    if chosen_plant == "bathtub_model":
-        external_disturbance = np.random.uniform(-range_disturbance, range_disturbance, num_timesteps)
-        local_value_arr = [target_value]
-    elif chosen_plant == "cournot_model":
-        external_disturbance = np.random.uniform(-range_disturbance, range_disturbance, num_timesteps)
-        local_value_arr = [target_value, q1_initial_value, q2_initial_value]
-    elif chosen_plant == "room_model":
-        external_disturbance = -np.random.normal(0, 0.01, num_timesteps)
-        external_disturbance = external_disturbance - 0.02
-        external_disturbance = np.clip(external_disturbance, -0.025, 0)
-        local_value_arr = [target_value]
+
+    external_disturbance = plant.get_external_disturbance(num_timesteps)
+    local_value_arr = plant.get_initial_value()
+    target_value = local_value_arr[0]
 
     for i in range(num_timesteps):
         local_value_arr = plant.update_plant(control_signal, external_disturbance[i], local_value_arr)
-        error = target_value - local_value_arr[0] 
+        error = target_value - local_value_arr[0]
         controller.update_error_history(error)
         delerror_delt = controller.error_history[-1] - controller.error_history[-2]
 
@@ -133,7 +107,6 @@ def update_controller(params, gradient):
     return params
 
 def plot_run(mse_history, params_history):
-    # plot the mse history 
     plt.xlabel("Epoch")
     plt.ylabel("MSE")
     plt.title("MSE history")

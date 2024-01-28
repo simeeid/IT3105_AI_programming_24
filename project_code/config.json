@@ -1,6 +1,6 @@
 {
     "plant": {
-        "value": "cournot_model",
+        "value": "room_model",
         "options": "bathtub_model, cournot_model, room_model"
     },
     "bathtub_model": {
@@ -18,13 +18,13 @@
     "room_model": {
         "target_temperature": 22,
         "temperature_outside": -5,
-        "heat_transfer_coefficient": 1, 
         "volume": 50,
-        "classic": "-5, 1, 50",
-        "neural": ""
+        "surface_area": 50,
+        "thermal_conductivity": 0.3,
+        "wall_thickness": 0.025
     },
     "controller": {
-        "value": "neural_net",
+        "value": "classic",
         "options": "classic, neural_net"
     },
     "classic": {
