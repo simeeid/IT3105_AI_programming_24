@@ -1,6 +1,6 @@
 {
     "plant": {
-        "value": "room_model",
+        "value": "bathtub_model",
         "options": "bathtub_model, cournot_model, room_model"
     },
     "bathtub_model": {
@@ -12,8 +12,8 @@
         "max_price": 4,
         "marginal_cost": 0.1,
         "target_value": 2.0,
-        "q1_initial_value": 0.2,
-        "q2_initial_value": 0.2
+        "q1_initial_value": 0.5,
+        "q2_initial_value": 0.5
     },
     "room_model": {
         "target_temperature": 22,
