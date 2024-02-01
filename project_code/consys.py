@@ -20,14 +20,13 @@ def initialize_system():
     number of layers, number of neurons, activation function, and range of initial values.
     """
     global chosen_controller; global plant
-    global num_epochs; global num_timesteps; global learning_rate; global range_disturbance
+    global num_epochs; global num_timesteps; global learning_rate
     global range_k_values
     global num_layers; global num_neurons; global activation_function; global range_initial_value
 
     num_epochs = config_reader.get_consys_config()['num_epochs']
     num_timesteps = config_reader.get_consys_config()['num_timesteps']
     learning_rate = config_reader.get_consys_config()['learning_rate']
-    range_disturbance = config_reader.get_consys_config()['range_disturbance']
 
     chosen_plant = config_reader.get_plant_config()['value']
     if chosen_plant == "bathtub_model":
